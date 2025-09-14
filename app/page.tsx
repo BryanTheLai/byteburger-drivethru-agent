@@ -46,6 +46,77 @@ export default function Page() {
   const [sessionSeconds, setSessionSeconds] = useState(0)
   const [uiEnded, setUiEnded] = useState(false)
 
+  const ensureMicPermission = useCallback(async () => {
+    try {
+      if (!navigator?.mediaDevices?.getUserMedia) return
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
+      })
+      try {
+        stream.getTracks().forEach((t) => t.stop())
+      } catch {}
+    } catch (e) {
+      throw e
+    }
+  }, [])
+
+  const unlockAudioOutput = useCallback(async () => {
+    try {
+      const Ctx = (window as any).AudioContext || (window as any).webkitAudioContext
+      if (!Ctx) return
+      const ctx = new Ctx()
+      if (ctx.state === "suspended") {
+        await ctx.resume()
+      }
+      const buffer = ctx.createBuffer(1, 1, 22050)
+      const src = ctx.createBufferSource()
+      src.buffer = buffer
+      src.connect(ctx.destination)
+      src.start(0)
+      setTimeout(() => {
+        try {
+          src.disconnect()
+          ctx.close?.()
+        } catch {}
+      }, 0)
+    } catch {}
+  }, [])
+
+  const maximizeMediaElements = useCallback(() => {
+    try {
+      const els = Array.from(document.querySelectorAll("audio, video")) as HTMLMediaElement[]
+      for (const el of els) {
+        try {
+          el.volume = 1
+          ;(el as any).playsInline = true
+          el.setAttribute("playsinline", "true")
+          el.autoplay = true
+          el.muted = false
+          el.controls = false
+        } catch {}
+      }
+    } catch {}
+  }, [])
+
+  const friendlyError = useCallback((e: any): string => {
+    const name = String(e?.name || "")
+    const msg = String(e?.message || e || "failed")
+    if (name === "NotAllowedError" || /denied|permission/i.test(msg)) {
+      return "Please enable microphone access permissions in your browser settings, then reload and try again."
+    }
+    if (name === "NotFoundError" || /no.*mic|not.*found/i.test(msg)) {
+      return "No microphone detected. Please connect a microphone and try again."
+    }
+    if (/audio.*(context|playback).*blocked|autoplay/i.test(msg)) {
+      return "Audio playback was blocked by the browser. Tap Order again after interacting with the page and ensure your device volume is turned up."
+    }
+    return msg
+  }, [])
+
   const conversation = useConversation({
     micMuted,
     volume: 1,
@@ -93,7 +164,7 @@ export default function Page() {
               try {
                 setStarted(false)
               } catch {}
-            }, 8000)
+            }, 10000)
           } catch {}
           try {
             window.dispatchEvent(
@@ -156,6 +227,11 @@ export default function Page() {
       try {
         localStorage.clear()
       } catch {}
+      try {
+        setMicMuted(false)
+      } catch {}
+      await ensureMicPermission()
+      await unlockAudioOutput()
       const r = await fetch("/api/conversation-token", { cache: "no-store" })
       const j = (await r.json()) as { token?: string; error?: string }
       if (!j.token) throw new Error(j.error || "no-token")
@@ -164,14 +240,16 @@ export default function Page() {
         conversationToken: j.token,
         connectionType: "webrtc",
       })
+      maximizeMediaElements()
       setStarted(true)
     } catch (e: any) {
-      setError(e?.message || "failed")
-      console.error("[ui] start error", { message: e?.message })
+      const msg = friendlyError(e)
+      setError(msg)
+      console.error("[ui] start error", { name: e?.name, message: e?.message })
     } finally {
       setLoading(false)
     }
-  }, [conversation, carId])
+  }, [conversation, carId, ensureMicPermission, unlockAudioOutput, maximizeMediaElements, friendlyError])
 
   const stop = useCallback(async () => {
     console.log("[ui] stop clicked")
@@ -232,6 +310,10 @@ export default function Page() {
   useEffect(() => {
     console.log("[ui] started", started)
   }, [started])
+
+  useEffect(() => {
+    maximizeMediaElements()
+  }, [status, isSpeaking, maximizeMediaElements])
 
   useEffect(() => {
     const key = "endTimer"
