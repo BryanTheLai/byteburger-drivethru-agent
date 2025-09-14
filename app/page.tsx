@@ -42,17 +42,18 @@ export default function Page() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const stateRef = useRef({})
+  const [sessionStart, setSessionStart] = useState<number | null>(null)
+  const [sessionSeconds, setSessionSeconds] = useState(0)
 
   const conversation = useConversation({
     micMuted,
     volume: 1,
     clientTools: {
       record_order: async ({
-        car_id,
         items,
-      }: { car_id: string; items: { item: string; qty: number }[] }): Promise<string> => {
+      }: { items: { item: string; qty: number }[] }): Promise<string> => {
         try {
-          console.log("[ui] clientTool record_order called", { car_id, items })
+          console.log("[ui] clientTool record_order called", { items })
           const usedCarId = /^car-\d{3}$/.test(carId) ? carId : formatCarId(parseCarNumber(carId) || 1)
           const payload = {
             car_id: usedCarId,
@@ -137,7 +138,6 @@ export default function Page() {
       await conversation.startSession({
         conversationToken: j.token,
         connectionType: "webrtc",
-        dynamicVariables: { car_id: carId },
       })
       setStarted(true)
     } catch (e: any) {
@@ -201,17 +201,76 @@ export default function Page() {
   }, [status])
 
   useEffect(() => {
-    if (receipt && started && !isSpeaking) {
-      console.log("[ui] agent finished speaking, ending session")
-      try {
-        ;(conversation as any)?.endSession?.()
-      } catch {}
-    }
-  }, [receipt, started, isSpeaking, conversation])
-
-  useEffect(() => {
     console.log("[ui] isSpeaking", isSpeaking)
   }, [isSpeaking])
+
+  useEffect(() => {
+    const key = "endTimer"
+    const anyRef = stateRef as React.MutableRefObject<Record<string, any>>
+    if (receipt && started && !isSpeaking && status === "connected") {
+      if (anyRef.current[key]) {
+        try {
+          clearTimeout(anyRef.current[key])
+        } catch {}
+      }
+      anyRef.current[key] = setTimeout(() => {
+        try {
+          ;(conversation as any)?.endSession?.()
+        } catch {}
+      }, 5000)
+    } else {
+      if (anyRef.current[key]) {
+        try {
+          clearTimeout(anyRef.current[key])
+        } catch {}
+        anyRef.current[key] = null
+      }
+    }
+    return () => {
+      if (anyRef.current[key]) {
+        try {
+          clearTimeout(anyRef.current[key])
+        } catch {}
+        anyRef.current[key] = null
+      }
+    }
+  }, [receipt, started, isSpeaking, status, conversation])
+
+  useEffect(() => {
+    const key = "duration"
+    const anyRef = stateRef as React.MutableRefObject<Record<string, any>>
+    if (status === "connected") {
+      setSessionStart(Date.now())
+      setSessionSeconds(0)
+      if (anyRef.current[key]) {
+        try {
+          clearInterval(anyRef.current[key])
+        } catch {}
+      }
+      anyRef.current[key] = setInterval(() => {
+        setSessionSeconds((prev) => {
+          const start = sessionStart ?? Date.now()
+          const secs = Math.max(0, Math.floor((Date.now() - start) / 1000))
+          return secs
+        })
+      }, 1000)
+    } else {
+      if (anyRef.current[key]) {
+        try {
+          clearInterval(anyRef.current[key])
+        } catch {}
+        anyRef.current[key] = null
+      }
+    }
+    return () => {
+      if (anyRef.current[key]) {
+        try {
+          clearInterval(anyRef.current[key])
+        } catch {}
+        anyRef.current[key] = null
+      }
+    }
+  }, [status, sessionStart])
 
   return (
     <div className="container vstack">
@@ -271,6 +330,9 @@ export default function Page() {
           </button>
         </div>
         {error ? <div className="small error-text">{error}</div> : null}
+        {status === "disconnected" ? (
+          <div className="small">Call ended • {sessionSeconds}s</div>
+        ) : null}
       </div>
 
       {receipt && (
