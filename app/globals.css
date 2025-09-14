@@ -1,0 +1,433 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --radius: 0.625rem;
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+}
+
+.dark {
+  --background: oklch(0.08 0 0);
+  --foreground: oklch(0.98 0 0);
+  --card: oklch(0.12 0 0);
+  --card-foreground: oklch(0.98 0 0);
+  --popover: oklch(0.12 0 0);
+  --popover-foreground: oklch(0.98 0 0);
+  --primary: oklch(0.98 0 0);
+  --primary-foreground: oklch(0.08 0 0);
+  --secondary: oklch(0.18 0 0);
+  --secondary-foreground: oklch(0.98 0 0);
+  --muted: oklch(0.18 0 0);
+  --muted-foreground: oklch(0.65 0 0);
+  --accent: oklch(0.18 0 0);
+  --accent-foreground: oklch(0.98 0 0);
+  --destructive: oklch(0.6 0.25 25);
+  --destructive-foreground: oklch(0.98 0 0);
+  --border: oklch(0.25 0 0);
+  --input: oklch(0.18 0 0);
+  --ring: oklch(0.4 0 0);
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: oklch(0.08 0 0);
+  --sidebar-foreground: oklch(0.98 0 0);
+  --sidebar-primary: oklch(0.8 0.15 85);
+  --sidebar-primary-foreground: oklch(0.08 0 0);
+  --sidebar-accent: oklch(0.18 0 0);
+  --sidebar-accent-foreground: oklch(0.98 0 0);
+  --sidebar-border: oklch(0.25 0 0);
+  --sidebar-ring: oklch(0.4 0 0);
+}
+
+@theme inline {
+  /* Updated font variables to use Inter and JetBrains Mono */
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-jetbrains-mono);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-chart-1: var(--color-chart-1);
+  --color-chart-2: var(--color-chart-2);
+  --color-chart-3: var(--color-chart-3);
+  --color-chart-4: var(--color-chart-4);
+  --color-chart-5: var(--color-chart-5);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply min-h-screen relative overflow-x-hidden;
+    /* Pure black background with no animations */
+    background: #000000;
+    color: oklch(0.98 0 0);
+  }
+}
+
+/* Static dot pattern background - no animations */
+.animated-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: -1;
+  overflow: hidden;
+  /* Single static dot pattern with golden color */
+  background-image: radial-gradient(circle, oklch(0.8 0.15 45 / 0.4) 2px, transparent 2px);
+  background-size: 20px 20px;
+}
+
+/* Remove all animated dot patterns */
+.dot-pattern {
+  display: none;
+}
+
+/* Enhanced UI Styles with Better Contrast */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 16px;
+  position: relative;
+  z-index: 1;
+}
+
+@media (min-width: 768px) {
+  .container {
+    padding: 24px;
+  }
+}
+
+/* Updated button styles with golden accent and consistent design */
+.button {
+  padding: 12px 20px;
+  border-radius: 8px;
+  border: 2px solid oklch(0.8 0.15 45 / 0.6);
+  background: transparent;
+  color: oklch(0.8 0.15 45);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 600;
+  font-size: 14px;
+  box-shadow: none;
+}
+
+.button:hover {
+  background: oklch(0.8 0.15 45 / 0.1);
+  border-color: oklch(0.8 0.15 45);
+  color: oklch(0.85 0.2 45);
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Golden primary button matching the design */
+.button.primary {
+  background: oklch(0.8 0.15 45);
+  color: #000000;
+  border-color: oklch(0.8 0.15 45);
+  font-weight: 700;
+}
+
+.button.primary:hover {
+  background: oklch(0.85 0.2 45);
+  border-color: oklch(0.85 0.2 45);
+}
+
+/* Dark card styling with subtle borders */
+.card {
+  border: 1px solid oklch(0.25 0 0);
+  border-radius: 12px;
+  padding: 20px;
+  background: #000000;
+  color: oklch(0.95 0 0);
+  margin-bottom: 16px;
+}
+
+@media (min-width: 768px) {
+  .card {
+    padding: 24px;
+    margin-bottom: 0;
+  }
+}
+
+.row {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: stretch;
+}
+
+@media (min-width: 768px) {
+  .row {
+    flex-direction: row;
+    gap: 24px;
+    align-items: flex-start;
+  }
+}
+
+.col {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Updated badge styling with golden accent */
+.badge {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 20px;
+  background: oklch(0.8 0.15 45);
+  color: #000000;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Updated pulse indicators */
+.pulse {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  position: relative;
+}
+
+.pulse.green {
+  background: oklch(0.7 0.2 140);
+}
+
+.pulse.red {
+  background: oklch(0.6 0.25 25);
+}
+
+.hstack {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+@media (min-width: 768px) {
+  .hstack {
+    flex-wrap: nowrap;
+  }
+}
+
+.vstack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.separator {
+  height: 1px;
+  background: oklch(0.3 0 0);
+  margin: 16px 0;
+}
+
+.small {
+  font-size: 14px;
+  color: oklch(0.7 0 0);
+  font-weight: 500;
+}
+
+/* Updated link styling to match button design */
+.link {
+  color: oklch(0.8 0.15 45);
+  text-decoration: none;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 2px solid oklch(0.8 0.15 45 / 0.6);
+  background: transparent;
+  transition: all 0.2s ease;
+}
+
+.link:hover {
+  color: oklch(0.85 0.2 45);
+  background: oklch(0.8 0.15 45 / 0.1);
+  border-color: oklch(0.8 0.15 45);
+}
+
+/* Updated input styling */
+input[type="number"] {
+  padding: 10px 12px;
+  border: 2px solid oklch(0.4 0 0);
+  border-radius: 8px;
+  background: #000000;
+  color: oklch(0.95 0 0);
+  width: 80px;
+  font-weight: 600;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+input[type="number"]:focus {
+  outline: none;
+  border-color: oklch(0.8 0.15 45);
+  background: #000000;
+}
+
+/* Updated heading styles with golden accent */
+h1,
+h2,
+h3 {
+  color: oklch(0.98 0 0);
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+h2 {
+  font-size: 2rem;
+  margin-bottom: 16px;
+}
+
+@media (max-width: 767px) {
+  h2 {
+    font-size: 1.5rem;
+  }
+}
+
+h3 {
+  font-size: 1.25rem;
+  margin-bottom: 12px;
+  color: oklch(0.8 0.15 45);
+}
+
+/* Enhanced order items styling for kitchen view */
+.order-item {
+  border: 1px solid oklch(0.35 0 0);
+  border-radius: 12px;
+  padding: 16px;
+  background: #000000;
+  color: oklch(0.95 0 0);
+  transition: all 0.2s ease;
+}
+
+.order-item:hover {
+  border-color: oklch(0.8 0.15 45 / 0.5);
+}
+
+.error-text {
+  color: oklch(0.7 0.25 25);
+  font-weight: 600;
+  padding: 12px;
+  background: oklch(0.7 0.25 25 / 0.1);
+  border: 1px solid oklch(0.7 0.25 25 / 0.3);
+  border-radius: 8px;
+}
+
+/* Mobile-specific improvements */
+@media (max-width: 767px) {
+  .container {
+    padding: 12px;
+  }
+
+  .card {
+    padding: 16px;
+  }
+
+  .button {
+    padding: 14px 18px;
+    font-size: 16px;
+    min-height: 48px;
+  }
+
+  input[type="number"] {
+    width: 60px;
+    font-size: 16px;
+    min-height: 44px;
+  }
+
+  .hstack {
+    gap: 8px;
+  }
+
+  .vstack {
+    gap: 12px;
+  }
+}
+
+/* Updated status indicators */
+.status-connected {
+  background: oklch(0.7 0.2 140);
+  color: #000000;
+}
+
+.status-ended {
+  background: oklch(0.6 0.25 25);
+  color: oklch(0.98 0 0);
+}
