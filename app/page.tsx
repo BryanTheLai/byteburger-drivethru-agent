@@ -3,11 +3,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useConversation } from "@elevenlabs/react"
 
 const MENU = [
-  { name: "ByteBurger", price: 8.99 },
-  { name: "NanoFries", price: 4.99 },
-  { name: "Quantum Nuggets", price: 6.99 },
-  { name: "Code Cola", price: 2.99 },
-  { name: "Debug Shake", price: 5.99 },
+  { name: "ByteBurger", price: 8.00 },
+  { name: "NanoFries", price: 4.00 },
+  { name: "Quantum Nuggets", price: 6.00 },
+  { name: "Code Cola", price: 2.00 },
+  { name: "Debug Shake", price: 5.00 },
 ] as const
 
 type ItemName = (typeof MENU)[number]["name"]
@@ -44,6 +44,7 @@ export default function Page() {
   const stateRef = useRef({})
   const [sessionStart, setSessionStart] = useState<number | null>(null)
   const [sessionSeconds, setSessionSeconds] = useState(0)
+  const [uiEnded, setUiEnded] = useState(false)
 
   const conversation = useConversation({
     micMuted,
@@ -71,6 +72,29 @@ export default function Page() {
           }
           console.log("[ui] record_order ok", { id: body.id })
           setReceipt({ id: body.id, car_id: usedCarId, created_at: new Date().toISOString(), items: payload.items })
+          setUiEnded(true)
+          try {
+            setStarted(false)
+          } catch {}
+          try {
+            const key = "endTimer"
+            const anyRef = stateRef as React.MutableRefObject<Record<string, any>>
+            if (anyRef.current[key]) {
+              try {
+                clearTimeout(anyRef.current[key])
+              } catch {}
+            }
+            console.log("[ui] scheduling endTimer (5s) after record_order")
+            anyRef.current[key] = setTimeout(() => {
+              console.log("[ui] endTimer fired — ending session")
+              try {
+                ;(conversation as any)?.endSession?.()
+              } catch {}
+              try {
+                setStarted(false)
+              } catch {}
+            }, 8000)
+          } catch {}
           try {
             window.dispatchEvent(
               new CustomEvent("elevenlabs-client-tool", { detail: { tool: "record_order", parameters: payload } }),
@@ -127,6 +151,7 @@ export default function Page() {
     console.log("[ui] start clicked")
     setError(null)
     setLoading(true)
+    setUiEnded(false)
     try {
       try {
         localStorage.clear()
@@ -190,14 +215,14 @@ export default function Page() {
       localStorage.clear()
     } catch {}
     setReceipt(null)
+    setUiEnded(false)
     const next = await computeNextCarId()
     setCarId(next)
   }, [computeNextCarId])
 
   useEffect(() => {
     console.log("[ui] status", status)
-    if (status === "disconnected") setStarted(false)
-    if (status === "connected") setStarted(true)
+    if (status !== "connected") setStarted(false)
   }, [status])
 
   useEffect(() => {
@@ -205,17 +230,39 @@ export default function Page() {
   }, [isSpeaking])
 
   useEffect(() => {
+    console.log("[ui] started", started)
+  }, [started])
+
+  useEffect(() => {
     const key = "endTimer"
     const anyRef = stateRef as React.MutableRefObject<Record<string, any>>
-    if (receipt && started && !isSpeaking && status === "connected") {
+    return () => {
+      if (anyRef.current[key]) {
+        try {
+          clearTimeout(anyRef.current[key])
+        } catch {}
+        anyRef.current[key] = null
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    const key = "quietTimer"
+    const anyRef = stateRef as React.MutableRefObject<Record<string, any>>
+    if (receipt && started && !isSpeaking) {
+      console.log("[ui] scheduling quietTimer (5s) — receipt present and agent quiet")
       if (anyRef.current[key]) {
         try {
           clearTimeout(anyRef.current[key])
         } catch {}
       }
       anyRef.current[key] = setTimeout(() => {
+        console.log("[ui] quietTimer fired — ending session")
         try {
           ;(conversation as any)?.endSession?.()
+        } catch {}
+        try {
+          setStarted(false)
         } catch {}
       }, 5000)
     } else {
@@ -234,12 +281,12 @@ export default function Page() {
         anyRef.current[key] = null
       }
     }
-  }, [receipt, started, isSpeaking, status, conversation])
+  }, [receipt, started, isSpeaking, conversation])
 
   useEffect(() => {
     const key = "duration"
     const anyRef = stateRef as React.MutableRefObject<Record<string, any>>
-    if (status === "connected") {
+    if (started) {
       setSessionStart(Date.now())
       setSessionSeconds(0)
       if (anyRef.current[key]) {
@@ -270,7 +317,7 @@ export default function Page() {
         anyRef.current[key] = null
       }
     }
-  }, [status, sessionStart])
+  }, [started, sessionStart])
 
   return (
     <div className="container vstack">
@@ -292,7 +339,7 @@ export default function Page() {
         <span className="badge">{carId.toUpperCase()}</span>
         <div className="hstack" style={{ gap: 16, flexWrap: "wrap" }}>
           <div className="hstack" style={{ gap: 8, alignItems: "center" }}>
-            <span className={`badge ${status === "connected" ? "status-connected" : "status-ended"}`} title={`Agent is ${status}`}>
+            <span className={`badge ${status === "connected" && started && !uiEnded ? "status-connected" : "status-ended"}`} title={`Agent is ${status}`}>
               Agent
             </span>
           </div>
@@ -306,7 +353,7 @@ export default function Page() {
 
       <div className="card vstack">
         <div className="hstack" style={{ gap: 12, justifyContent: "space-between" }}>
-          {!started ? (
+          {!started || uiEnded ? (
             <button className="button primary" onClick={start} disabled={loading} style={{ flex: 1 }}>
               Order
             </button>
@@ -330,8 +377,8 @@ export default function Page() {
           </button>
         </div>
         {error ? <div className="small error-text">{error}</div> : null}
-        {status === "disconnected" ? (
-          <div className="small">Call ended • {sessionSeconds}s</div>
+        {sessionStart !== null && (uiEnded || status !== "connected" || !started) ? (
+          <div className="small" title={`Session duration: ${sessionSeconds}s`}>Call ended • {sessionSeconds}s</div>
         ) : null}
       </div>
 
