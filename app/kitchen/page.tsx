@@ -78,18 +78,6 @@ export default function KitchenPage() {
     [pending],
   )
 
-  const seed = useCallback(async () => {
-    setError(null)
-    try {
-      const r = await fetch("/api/seed", { method: "POST" })
-      const j = await r.json()
-      if (!r.ok) throw new Error(j?.error || "failed")
-      await load()
-    } catch (e: any) {
-      setError(e?.message || "failed")
-    }
-  }, [load])
-
   const Section = ({ title, rows }: { title: string; rows: OrderRow[] }) => (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -172,12 +160,6 @@ export default function KitchenPage() {
             className="border border-gray-600 text-white hover:bg-gray-700 px-3 py-2 text-sm rounded transition-colors disabled:opacity-50"
           >
             {loading ? "Loading..." : "Refresh"}
-          </button>
-          <button
-            onClick={seed}
-            className="bg-yellow-400 hover:bg-yellow-500 text-black font-bold px-3 py-2 text-sm rounded transition-colors"
-          >
-            Seed Demo Orders
           </button>
         </div>
       </div>
