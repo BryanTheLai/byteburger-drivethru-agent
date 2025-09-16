@@ -1,6 +1,13 @@
 "use client"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useConversation } from "@elevenlabs/react"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 
 const MENU = [
   { name: "ByteBurger", price: 8.00 },
@@ -45,6 +52,7 @@ export default function Page() {
   const [sessionStart, setSessionStart] = useState<number | null>(null)
   const [sessionSeconds, setSessionSeconds] = useState(0)
   const [uiEnded, setUiEnded] = useState(false)
+  const [showPopup, setShowPopup] = useState(true)
 
   const ensureMicPermission = useCallback(async () => {
     try {
@@ -402,7 +410,23 @@ export default function Page() {
   }, [started, sessionStart])
 
   return (
-    <div className="container vstack">
+    <>
+      <Dialog open={showPopup} onOpenChange={setShowPopup}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Recommendation</DialogTitle>
+            <DialogDescription>
+              For the best experience with voice ordering, please use a desktop computer with stable WiFi in a quiet room.
+            </DialogDescription>
+          </DialogHeader>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
+            <button className="button primary" onClick={() => setShowPopup(false)}>
+              OK
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
+      <div className="container vstack">
       <div className="row" style={{ alignItems: "center", marginBottom: 16 }}>
         <div className="col">
           <h2>ByteBurger Drive-Thru</h2>
@@ -537,5 +561,6 @@ export default function Page() {
         </div>
       </div>
     </div>
+    </>
   )
 }
