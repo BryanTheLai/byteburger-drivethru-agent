@@ -129,11 +129,11 @@ export default function Page() {
     micMuted,
     volume: 1,
     clientTools: {
-      record_order: async ({
+  place_order_after_confirmation: async ({
         items,
       }: { items: { item: string; qty: number }[] }): Promise<string> => {
         try {
-          console.log("[ui] clientTool record_order called", { items })
+          console.log("[ui] clientTool place_order_after_confirmation called", { items })
           const usedCarId = /^car-\d{3}$/.test(carId) ? carId : formatCarId(parseCarNumber(carId) || 1)
           const payload = {
             car_id: usedCarId,
@@ -146,10 +146,10 @@ export default function Page() {
           })
           const body = (await resp.json()) as { id?: number }
           if (!resp.ok || !body?.id) {
-            console.error("[ui] record_order failed", { status: resp.status, body })
+            console.error("[ui] place_order_after_confirmation failed", { status: resp.status, body })
             return "error"
           }
-          console.log("[ui] record_order ok", { id: body.id })
+          console.log("[ui] place_order_after_confirmation ok", { id: body.id })
           setReceipt({ id: body.id, car_id: usedCarId, created_at: new Date().toISOString(), items: payload.items })
           setUiEnded(true)
           try {
@@ -163,7 +163,7 @@ export default function Page() {
                 clearTimeout(anyRef.current[key])
               } catch {}
             }
-            console.log("[ui] scheduling endTimer (5s) after record_order")
+            console.log("[ui] scheduling endTimer (5s) after place_order_after_confirmation")
             anyRef.current[key] = setTimeout(() => {
               console.log("[ui] endTimer fired — ending session")
               try {
@@ -176,12 +176,12 @@ export default function Page() {
           } catch {}
           try {
             window.dispatchEvent(
-              new CustomEvent("elevenlabs-client-tool", { detail: { tool: "record_order", parameters: payload } }),
+              new CustomEvent("elevenlabs-client-tool", { detail: { tool: "place_order_after_confirmation", parameters: payload } }),
             )
           } catch {}
           return `order-recorded:${body.id}`
         } catch {
-          console.error("[ui] record_order exception")
+          console.error("[ui] place_order_after_confirmation exception")
           return "error"
         }
       },

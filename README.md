@@ -18,7 +18,7 @@ You play the customer ("car-001", "car-002", …), talk to the Agent, confirm or
 
 
 
-* Use an **ElevenLabs Agent** with a client tool `record_order` to take simple orders from customers.
+* Use an **ElevenLabs Agent** with a client tool `place_order_after_confirmation` to take simple orders from customers.
 * Hardcoded menu of exactly **5 items**: ByteBurger, NanoFries, Quantum Nuggets, Code Cola, Debug Shake.
 * Each car/session has its own **car\_id**, auto-incremented (car-001, car-002, …).
 * Agent must repeat back order counts for confirmation before calling the tool.
@@ -56,11 +56,11 @@ You play the customer ("car-001", "car-002", …), talk to the Agent, confirm or
 
 
 
-### Client Tool: `record_order`
+### Client Tool: `place_order_after_confirmation`
 
 
 
-* **Name**: `record_order`
+* **Name**: `place_order_after_confirmation`
 * **Description**: “Records a confirmed order to the kitchen system. Use only after the user confirms counts.”
 * **Parameters**:
 
@@ -115,10 +115,12 @@ Menu (only these 5 items are available):
 Rules:
 - Always keep responses short and snappy.
 - When the user orders, repeat back exact counts to confirm (e.g., "2 ByteBurgers and 1 Code Cola. Is that correct?").
-- Only after the user clearly confirms, call the client tool `record_order` with the current `car_id` and the confirmed items.
-- Do NOT invent or accept any items outside the menu.
-- If asked for something else, politely say it’s not available and offer the menu items.
-- After tool call, say it’s been placed, please move to the next counter. Then end the call.
+- Only after the user clearly confirms, call the client tool `place_order_after_confirmation` with the current `car_id` and the confirmed items.
+ - When the user orders, repeat back exact counts to confirm (e.g., "2 ByteBurgers and 1 Code Cola. Is that correct?").
+ - Only after the user clearly confirms, call the client tool `place_order_after_confirmation` with the current `car_id` and the confirmed items.
+ - Do NOT invent or accept any items outside the menu.
+ - If asked for something else, politely say it’s not available and offer the menu items.
+ - After tool call, say it’s been placed, please move to the next counter. Then end the call.
 ```
 
 
@@ -184,7 +186,7 @@ create table public.orders (
 3. User orders via voice: e.g. “I want 2 ByteBurgers and a Code Cola.”
 4. Agent repeats exactly: “2 ByteBurgers and 1 Code Cola. Is that correct?”
 5. User says “Yes.”
-6. Agent calls `record_order` tool with `{ car_id: “car-XXX”, items: [ … ] }`.
+6. Agent calls `place_order_after_confirmation` tool with `{ car_id: “car-XXX”, items: [ … ] }`.
 7. Backend route receives tool call, inserts into `orders` table.
 8. UI shows “Order placed” + fake receipt. Then increment car\_id for next order (car-002).
 9. Kitchen UI refreshes, sees new order, staff clicks “Mark as Done” → status update.
