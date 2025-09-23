@@ -20,20 +20,17 @@ Open `http://localhost:3000` for the Drive‑Thru UI and `http://localhost:3000/
 
 ## What this repo is 🧩
 
-
 ## Architecture Diagram
-```dot
-digraph Architecture {
-  rankdir=LR
-  node [shape=box]
 
-  Frontend -> ConversationTokenService
-  Frontend -> AgentClient
-  AgentClient -> OrderService
-  OrderService -> Supabase
-  KitchenUI -> Supabase
-}
-}
+```mermaid
+flowchart LR
+  Frontend --> ConversationTokenService
+  Frontend --> AgentClient
+  AgentClient --> OrderService
+  OrderService --> Supabase
+  KitchenUI --> Supabase
+```
+
 
 ## Minimal Requirements ✅
 
@@ -53,6 +50,7 @@ ELEVENLABS_AGENT_ID=your_agent_id
 ```
 
 Notes:
+
 - `SUPABASE_SERVICE_ROLE_KEY` must be the service role key (server-only) so server routes can insert rows.
 - `ELEVENLABS_AGENT_ID` is the agent you create in the ElevenLabs Dashboard.
 
@@ -104,7 +102,7 @@ JSON schema (copy exactly):
 
 System prompt (use in the agent):
 
-```
+```text
 You are the ByteBurger Drive-Thru agent.
 
 Menu (only these 5 items are available):
