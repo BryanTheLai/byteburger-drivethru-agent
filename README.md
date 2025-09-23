@@ -1,107 +1,101 @@
-@elevenlabs-agent.md @supabase-setup.md @README.md 
+# ByteBurger Drive-Thru 🍔
 
+A minimal, blunt guide for the ByteBurger Drive-Thru voice ordering demo.
 
-# ByteBurger Drive-Thru Voice Ordering System
+This repository contains a Next.js frontend + server routes, an ElevenLabs conversational agent client, and a Supabase-backed kitchen. The goal: speak an order to an agent, confirm counts, the agent records the order via a client tool and the kitchen UI shows pending/done orders.
 
+## TL;DR (if you want to run it now) ⚡
 
+- Create a Supabase project and run the SQL in `docs/supabase-setup.md` (creates `orders` table).
+- Create an ElevenLabs Conversational Agent and add the client tool `place_order_after_confirmation` or `record_order` as documented below.
+- Create a `.env.local` with the required env vars (see below).
+- Run:
 
-An app for voice-driven drive-thru ordering using ElevenLabs Conversational AI Agent + CRUD backend (Supabase).
-You play the customer ("car-001", "car-002", …), talk to the Agent, confirm order, then the system records the order in database; kitchen staff views pending and done orders.
+```powershell
+npm install
+npm run dev
+```
 
+Open `http://localhost:3000` for the Drive‑Thru UI and `http://localhost:3000/kitchen` for the Kitchen UI.
 
+## What this repo is 🧩
 
----
+- Frontend: Next.js app in `app/` (React Server Components + client components where needed).
+- Agent client: uses `@elevenlabs/react` to start WebRTC sessions from the Drive‑Thru page (`app/page.tsx`).
+- Server routes: small Next.js server endpoints under `app/api/*` (conversation token and order backend endpoints).
+- Database: Supabase `orders` table. Server routes use the service role key.
 
+## Minimal Requirements ✅
 
+- Node 18+
+- Supabase project (with `orders` table)
+- ElevenLabs account with Conversational AI Agents and API access
 
-## 🎯 Overview & Goals
+## Env variables 🔐
 
+Create `.env.local` at the project root (do NOT commit):
 
+```text
+SUPABASE_URL=your_supabase_url
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+ELEVENLABS_API_KEY=your_elevenlabs_api_key
+ELEVENLABS_AGENT_ID=your_agent_id
+```
 
-* Use an **ElevenLabs Agent** with a client tool `place_order_after_confirmation` to take simple orders from customers.
-* Hardcoded menu of exactly **5 items**: ByteBurger, NanoFries, Quantum Nuggets, Code Cola, Debug Shake.
-* Each car/session has its own **car\_id**, auto-incremented (car-001, car-002, …).
-* Agent must repeat back order counts for confirmation before calling the tool.
-* Once confirmed, store order in Supabase.
-* Two screens:
+Notes:
+- `SUPABASE_SERVICE_ROLE_KEY` must be the service role key (server-only) so server routes can insert rows.
+- `ELEVENLABS_AGENT_ID` is the agent you create in the ElevenLabs Dashboard.
 
+## Supabase: SQL (what to run) 🗄️
 
+Copy the SQL in `docs/supabase-setup.md` into Supabase SQL editor. The table schema is:
 
-  1. **Drive-Thru UI** (customer side): talk to agent, simulate car, fake receipt, next car.
-  2. **Kitchen UI**: view orders (pending & done), mark done, refresh every 5 seconds.
-* Include a mute button and voice animation to show speaking state of both the user and the agent.
+```sql
+create table public.orders (
+  id serial primary key,
+  car_id text not null,
+  items jsonb not null,
+  status text not null default 'pending',
+  created_at timestamptz not null default now()
+);
+```
 
+Optional: add indexes on `status` or `created_at` if you want faster kitchen queries.
 
----
+## ElevenLabs Agent: set up the client tool and system prompt 🤖
 
+You must create an agent in the ElevenLabs Dashboard and add one client tool. The code in this repo expects the tool name `place_order_after_confirmation` but the docs mention `record_order` in places — pick one name and be consistent in the Dashboard and `.env` usage. The recommended tool config is below.
 
+Client tool name: `place_order_after_confirmation`
 
-## 🍲 Menu
-
-
-
-* ByteBurger
-* NanoFries
-* Quantum Nuggets
-* Code Cola
-* Debug Shake
-
-
-
----
-
-
-
-## 🔧 Agent Configuration & Client Tool
-
-
-
-### Client Tool: `place_order_after_confirmation`
-
-
-
-* **Name**: `place_order_after_confirmation`
-* **Description**: “Records a confirmed order to the kitchen system. Use only after the user confirms counts.”
-* **Parameters**:
-
-
+JSON schema (copy exactly):
 
 ```json
 {
-  "type": "object",
-  "properties": {
-    "car_id": { "type": "string" },
-    "items": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "properties": {
-          "item": { "type": "string" },
-          "qty": { "type": "integer", "minimum": 1 }
-        },
-        "required": ["item","qty"]
-      },
-      "minItems": 1
-    }
-  },
-  "required": ["car_id","items"]
+  "type": "object",
+  "properties": {
+    "car_id": { "type": "string" },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "item": { "type": "string" },
+          "qty": { "type": "integer", "minimum": 1 }
+        },
+        "required": ["item","qty"]
+      },
+      "minItems": 1
+    }
+  },
+  "required": ["car_id","items"]
 }
 ```
 
-
-
-* **Return**: simple string, e.g. `"order-recorded:123"`.
-
-
-
-### System Prompt (Agent)
-
-
+System prompt (use in the agent):
 
 ```
 You are the ByteBurger Drive-Thru agent.
-
-
 
 Menu (only these 5 items are available):
 - ByteBurger
@@ -110,307 +104,82 @@ Menu (only these 5 items are available):
 - Code Cola
 - Debug Shake
 
-
-
 Rules:
 - Always keep responses short and snappy.
 - When the user orders, repeat back exact counts to confirm (e.g., "2 ByteBurgers and 1 Code Cola. Is that correct?").
 - Only after the user clearly confirms, call the client tool `place_order_after_confirmation` with the current `car_id` and the confirmed items.
- - When the user orders, repeat back exact counts to confirm (e.g., "2 ByteBurgers and 1 Code Cola. Is that correct?").
- - Only after the user clearly confirms, call the client tool `place_order_after_confirmation` with the current `car_id` and the confirmed items.
- - Do NOT invent or accept any items outside the menu.
- - If asked for something else, politely say it’s not available and offer the menu items.
- - After tool call, say it’s been placed, please move to the next counter. Then end the call.
+- Do NOT invent or accept any items outside the menu.
+- If asked for something else, politely say it’s not available and offer the menu items.
+- After tool call, say it’s been placed, please move to the next counter. Then end the call.
 ```
 
+Important: The agent must NOT call the tool until the user confirms. Your tool should only be called on an explicit confirmation.
 
+## Files you should care about (quick map) 🗺️
 
----
+- `app/page.tsx` — Drive‑Thru UI (agent client, WebRTC startup, client tools wiring, local UI for receipt and car_id management).
+- `app/kitchen/page.tsx` — Kitchen UI (fetches from Supabase, mark done, seed demo orders).
+- `app/api/conversation-token/route.ts` — Returns ElevenLabs conversation token using `ELEVENLABS_API_KEY` and `ELEVENLABS_AGENT_ID`.
+- `lib/supabaseServer.ts` — Supabase server client helper (uses `SUPABASE_SERVICE_ROLE_KEY`).
+- `docs/elevenlabs-agent.md` — Detailed agent instructions for Dashboard.
+- `docs/supabase-setup.md` — Supabase SQL to create `orders` table.
 
+If anything looks wrong here, grep the repo for the file names above.
 
+## Behavior and important details ℹ️
 
-## 🏗 Core Architecture
+- Menu is hardcoded to exactly 5 items (see the system prompt). The agent and UI should reject any other item names.
+- `car_id` is a string like `car-001`, `car-002` and increments for each successful order.
+- The Drive‑Thru UI will compute the next `car_id` client-side by checking existing orders and defaulting to `car-001`.
+- Every new session (for a demo) should `localStorage.clear()` before starting to avoid stale state.
 
+## How the flow works (step-by-step) ▶️
 
+1. Load Drive‑Thru page, click `Start Voice Order`.
+2. The page calls `GET /api/conversation-token` to get a conversation token from ElevenLabs. (See `app/api/conversation-token/route.ts`.)
+3. It starts a WebRTC session with the agent using `@elevenlabs/react`.
+4. You speak the order (or use the manual input fallback). The agent repeats counts and asks for confirmation.
+5. You say `Yes` (or explicit confirm). Only then the agent calls the client tool `place_order_after_confirmation` (with `car_id` and `items`).
+6. The client tool in the browser calls the Next.js backend route that inserts the order into Supabase.
+7. The Drive‑Thru UI shows a receipt and the kitchen UI will show the pending order within ~5s refresh.
 
-Here’s how the pieces should be set up (UI, agent, database, tools).
+## Run and develop 🚀
 
+Install and run the dev server:
 
-
-### Components
-
-
-
-| Component            | Responsibility                                                                                                                                                                                                                                         |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Drive-Thru UI**    | Shows greeting, mic / WebRTC conversation via `@elevenlabs/react`, listens for car/customer voice, displays recognized text, handles “Yes” confirmation, shows receipt. Auto increments `car_id` each new order. Mute button + animation during voice. |
-| **Kitchen UI**       | Connects to Supabase, shows list of all orders, grouped by status (`pending` / `done`), allows marking orders done, refresh every 5s + manual refresh.                                                                                                 |
-| **Backend API**      | Next.js server routes that talk to Supabase: record\_order route (though Agent calls client tool which triggers server route), fetch orders, mark done. Also token route for Agent WebRTC.                                                             |
-| **ElevenLabs Agent** | Configured via Dashboard (per your prompt + tool). Agent SDK client in the Drive-Thru UI: starts session with WebRTC, has available tool `record_order`.                                                                                               |
-
-
-
-### Data Storage
-
-
-
-Supabase table:
-
-
-
-```sql
-create table public.orders (
-  id serial primary key,
-  car_id text not null,
-  items jsonb not null,
-  status text not null default 'pending',
-  created_at timestamptz not null default now()
-);
-```
-
-
-
-* `car_id`: auto-incrementing like `"car-001"`, `"car-002"`.
-* `items`: JSON array of `{ item: string, qty: integer }`.
-* `status`: `'pending'` or `'done'`.
-* `created_at`: timestamp.
-
-
-
-### Flow
-
-
-
-1. UI loads → fetch next car\_id (you can compute client-side via supabase query: max existing or start at “car-001” if none).
-2. Start agent session using `@elevenlabs/react` with system prompt & tool.
-3. User orders via voice: e.g. “I want 2 ByteBurgers and a Code Cola.”
-4. Agent repeats exactly: “2 ByteBurgers and 1 Code Cola. Is that correct?”
-5. User says “Yes.”
-6. Agent calls `place_order_after_confirmation` tool with `{ car_id: “car-XXX”, items: [ … ] }`.
-7. Backend route receives tool call, inserts into `orders` table.
-8. UI shows “Order placed” + fake receipt. Then increment car\_id for next order (car-002).
-9. Kitchen UI refreshes, sees new order, staff clicks “Mark as Done” → status update.
-
-
-
----
-
-
-
-## 🛠 Requirements & Tech Stack
-
-
-
-* **Library**: `@elevenlabs/react` (Agent SDK) for WebRTC voice conversation.
-* **Supabase**: for database, real storage.
-* **Next.js**: front + server.
-* **localStorage**: for Drive-Thru UI session state if needed (for receipt visibility, car\_id persistence).
-* **Environment Variables**:
-
-
-
-```
-NEXT_PUBLIC_SUPABASE_URL_URL=…
-SUPABASE_SERVICE_ROLE_KEY=…
-ELEVENLABS_API_KEY=…
-ELEVENLABS_AGENT_ID=…
-```
-
-
-
----
-
-
-
-## 🎬 Demo Safety & Enhancements
-
-
-
-* Pre-seed kitchen with a few fake “pending” orders so Kitchen UI isn’t empty.
-* Make a **demo script**: you practice one full order flow (customer speaks, confirms, places, show receipt, kitchen sees, mark done).
-* Mute button + voice animation so audience sees when the agent or car is speaking.
-* If voice fails, always fallback to manual input for order.
-* Auto car\_id reset or explicit clear before demo.
-
-
-
----
-
-
-
-## ✅ Success Criteria
-
-
-
-* Drive-Thru UI: user can talk to agent or manually input order, confirm, see receipt, car\_id increments.
-* Agent does *not* accept invalid menu items.
-* Orders inserted into Supabase, kitchen sees pending orders, can mark done.
-* Kitchen UI refreshes every \~5s.
-* No weird agent hallucinations; flow stays on script.
-
-
-
----
-```app/api/conversation-token/route.ts
-import { NextResponse } from "next/server"
-
-
-export async function GET(): Promise<NextResponse> {
-  const apiKey = process.env.ELEVENLABS_API_KEY
-  const agentId = process.env.ELEVENLABS_AGENT_ID
-  if (!apiKey || !agentId) {
-    return NextResponse.json({ error: "Missing ELEVENLABS_API_KEY or ELEVENLABS_AGENT_ID" }, { status: 500 })
-  }
-  const url = `https://api.elevenlabs.io/v1/convai/conversation/token?agent_id=${encodeURIComponent(agentId)}`
-  const resp = await fetch(url, {
-    headers: { "xi-api-key": apiKey },
-    cache: "no-store",
-  })
-  if (!resp.ok) {
-    return NextResponse.json({ error: "Failed to get conversation token" }, { status: 500 })
-  }
-  const body = (await resp.json()) as { token: string }
-  return NextResponse.json({ token: body.token })
-}
-
-
-```
-
-
-Use this route.ts, it just works.
-
-
-You will probably need something like this in page.tsx for the customer facing side:
-```code from other project, dynamic variables and client are not the same as for byteburger!!
-  try {
-        await conversation.startSession({
-          conversationToken: j.token,
-          connectionType: "webrtc",
-          dynamicVariables: {
-            product_name: productName,
-            product_description: productDescription,
-            base_price: basePrice,
-            sticker_price: stickerPrice,
-            policy_confidential_competition: true,
-            session_id: sid,
-          },
-          clientTools: {
-            // allow the agent to report the numeric offer it heard
-            set_user_offer: ({ offer }: { offer: number }): string => {
-              try {
-                const n = Math.max(0, Math.floor(Number(offer) || 0))
-                // update both ref and React state so UI updates immediately.
-                // Avoid setting identical values to reduce re-renders.
-                if (stateRef.current.userOffer !== n) {
-                  stateRef.current.userOffer = n
-                  setUserOffer(n)
-                }
-                console.info("[clientTool] set_user_offer called ->", n)
-                // emit a DOM event so you can observe tool calls from the browser console
-                try {
-                  window.dispatchEvent(new CustomEvent("elevenlabs-client-tool", { detail: { tool: "set_user_offer", parameters: { offer: n } } }))
-                } catch { }
-                return `ok:reported:${n}`
-              } catch (e) {
-                return `error`
-              }
-            },
-          },
-        })
-  ```
-
-
-
-Use context7 tool call or deepwiki or websearch, whatever you need to do to make sure this app works.
-Make sure write readme of what i need to do from my part, like in elevenlabs dashboard.
-write the skeleton and core logic, make sure everything works.
-Research as much as you need, then plan and execute.
-Make sure to follow what i said.
-Keep things minimal, make sure they all work.
-Make sure for each new person, car, use localStorage.clear() before starting.
-
-Create in this repository.
-
-## 🚀 Setup & Run
-
-### 1) Prerequisites
-
-- Node 18+
-- An ElevenLabs account with Conversational AI Agents enabled
-- A Supabase project
-
-### 2) Environment Variables
-
-Create a `.env.local` file at the repository root with:
-
-```
-SUPABASE_URL=your_supabase_project_url
-SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
-ELEVENLABS_API_KEY=your_elevenlabs_api_key
-ELEVENLABS_AGENT_ID=your_agent_id
-```
-
-Do not commit secrets.
-
-### 3) Supabase Table
-
-Open `docs/supabase-setup.md` and copy/paste the SQL into the Supabase SQL editor to create the `orders` table. Optional indexes are included.
-
-### 4) ElevenLabs Agent Dashboard
-
-Open `docs/elevenlabs-agent.md` and follow the steps to:
-
-- Create the Client Tool `record_order` with the provided JSON schema
-- Set the System Prompt exactly as shown
-- Use your preferred voice
-
-Copy the Agent ID into `.env.local` as `ELEVENLABS_AGENT_ID`.
-
-### 5) Install & Run
-
-```
+```powershell
 npm install
 npm run dev
 ```
 
-Open http://localhost:3000 for Drive-Thru and http://localhost:3000/kitchen for Kitchen.
+Open browser at `http://localhost:3000` and `http://localhost:3000/kitchen`.
 
-## 🧭 How To Use
+Tips for local testing:
 
-### Drive-Thru
+- Clear localStorage before demo: open Console → `localStorage.clear()`.
+- Use a real microphone; grant permissions.
+- If WebRTC fails, use manual fallback on the Drive‑Thru page (simple form to build order quantities).
 
-- Click `Start Voice Order` to begin a WebRTC session with the Agent
-- Speak your order; the Agent will repeat counts to confirm
-- Say "Yes" to confirm; the Agent calls `record_order` and the order is inserted
-- A receipt appears; click `Next Car` to advance the `car_id`
-- Use `Mute` if needed; the green dot indicates Agent speaking; red indicates idle/muted
-- Manual fallback: type quantities and click `Confirm Manual Order`
+## Testing & demo helpers 🧪
 
-### Kitchen
+- Kitchen page has a `Seed Demo Orders` button to pre-populate pending orders for demos.
+- Kitchen auto-refreshes every ~5 seconds — use this to simulate staff watching the queue.
 
-- Visit `/kitchen` to see `pending` and `done` orders
-- Click `Mark Done` to move an order to done
-- Auto-refreshes every ~5 seconds; click `Refresh` to force reload
-- Click `Seed Demo Orders` to pre-populate pending rows for demos
+## Troubleshooting 🛠️
 
-## 🔐 Notes
+- 500 from `GET /api/conversation-token`: ensure `ELEVENLABS_API_KEY` and `ELEVENLABS_AGENT_ID` are set.
+- Orders not appearing in kitchen: ensure `SUPABASE_SERVICE_ROLE_KEY` is set and `orders` table exists.
+- Agent accepts invalid items: check the agent system prompt & tool schema in the ElevenLabs Dashboard — the prompt must list only the 5 menu items.
 
-- Server routes use the Supabase Service Role key; keep it only in server environment variables
-- The conversation token endpoint is implemented at `app/api/conversation-token/route.ts`
-- Each new session clears `localStorage` before starting
+## Security notes 🔒
 
-## 🧪 Demo Flow
+- Never commit `.env.local` or service role keys.
+- Server routes use the Supabase service role key — keep that out of client code and public repos.
 
-1. Load `/kitchen`, click `Seed Demo Orders`
-2. Load `/`, click `Start Voice Order`
-3. Order: "Two ByteBurgers and one Code Cola"
-4. Agent confirms counts; say "Yes"
-5. Receipt appears; Kitchen shows a new pending order
-6. In Kitchen, click `Mark Done`
+## Minimal checklist before demo ✅
 
-## 🆘 Troubleshooting
-
-- If `Start Voice Order` fails, verify `.env.local` is set and restart the dev server
-- Ensure your browser has microphone permissions
-- Confirm the Agent has the `record_order` tool configured with the correct JSON schema
-- Supabase insert errors usually mean environment variables are missing or table not created
+1. Run SQL in `docs/supabase-setup.md`.
+2. Add `.env.local` with the four env vars above.
+3. Create an ElevenLabs agent and add the client tool with the JSON schema and system prompt above.
+4. Start dev server and test a single order.
+5. Use `localStorage.clear()` before each new person/car for demos.
