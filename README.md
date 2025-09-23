@@ -20,10 +20,20 @@ Open `http://localhost:3000` for the Drive‑Thru UI and `http://localhost:3000/
 
 ## What this repo is 🧩
 
-- Frontend: Next.js app in `app/` (React Server Components + client components where needed).
-- Agent client: uses `@elevenlabs/react` to start WebRTC sessions from the Drive‑Thru page (`app/page.tsx`).
-- Server routes: small Next.js server endpoints under `app/api/*` (conversation token and order backend endpoints).
-- Database: Supabase `orders` table. Server routes use the service role key.
+
+## Architecture Diagram
+```dot
+digraph Architecture {
+  rankdir=LR
+  node [shape=box]
+
+  Frontend -> ConversationTokenService
+  Frontend -> AgentClient
+  AgentClient -> OrderService
+  OrderService -> Supabase
+  KitchenUI -> Supabase
+}
+}
 
 ## Minimal Requirements ✅
 
