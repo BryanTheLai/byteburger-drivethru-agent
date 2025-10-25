@@ -22,6 +22,7 @@ export default function KitchenPage() {
   const [done, setDone] = useState<OrderRow[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [showDbWarning, setShowDbWarning] = useState(true)
 
   const load = useCallback(async () => {
     setError(null)
@@ -163,6 +164,29 @@ export default function KitchenPage() {
           </button>
         </div>
       </div>
+
+      {showDbWarning && (
+        <div className="bg-black border border-yellow-400/30 p-4 rounded mb-6" style={{ background: 'rgba(255, 193, 7, 0.1)' }}>
+          <div className="flex justify-between items-start gap-4">
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">ℹ️</span>
+                <strong className="text-yellow-400">Note</strong>
+              </div>
+              <div className="text-sm text-white/90">
+                Supabase free tier pauses after 7 days of inactivity. If no orders appear, the database may be temporarily paused. The demo still works for new orders!
+              </div>
+            </div>
+            <button 
+              onClick={() => setShowDbWarning(false)}
+              className="text-white/60 hover:text-white text-xl px-2 bg-transparent border-0 cursor-pointer"
+              title="Dismiss"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
 
       {error && <div className="bg-red-900 border border-red-700 text-red-200 px-4 py-3 rounded mb-6">{error}</div>}
 

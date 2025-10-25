@@ -53,6 +53,7 @@ export default function Page() {
   const [sessionSeconds, setSessionSeconds] = useState(0)
   const [uiEnded, setUiEnded] = useState(false)
   const [showPopup, setShowPopup] = useState(true)
+  const [showDbWarning, setShowDbWarning] = useState(true)
 
   const ensureMicPermission = useCallback(async () => {
     try {
@@ -427,6 +428,41 @@ export default function Page() {
         </DialogContent>
       </Dialog>
       <div className="container vstack">
+      {showDbWarning && (
+        <div className="card" style={{ 
+          background: 'rgba(255, 193, 7, 0.1)', 
+          border: '1px solid rgba(255, 193, 7, 0.3)',
+          marginBottom: 16,
+          position: 'relative'
+        }}>
+          <div className="hstack" style={{ justifyContent: 'space-between', alignItems: 'flex-start', gap: 16 }}>
+            <div className="vstack" style={{ gap: 8 }}>
+              <div className="hstack" style={{ gap: 8, alignItems: 'center' }}>
+                <span style={{ fontSize: '1.2em' }}>ℹ️</span>
+                <strong style={{ color: 'rgb(255, 193, 7)' }}>Note</strong>
+              </div>
+              <div className="small" style={{ color: 'rgba(255, 255, 255, 0.9)' }}>
+                Supabase free tier pauses after 7 days of inactivity. Voice ordering and manual ordering still work — order history may be temporarily unavailable.
+              </div>
+            </div>
+            <button 
+              onClick={() => setShowDbWarning(false)}
+              style={{ 
+                background: 'transparent',
+                border: 'none',
+                color: 'rgba(255, 255, 255, 0.6)',
+                cursor: 'pointer',
+                fontSize: '1.2em',
+                padding: '4px 8px',
+                minWidth: 'auto'
+              }}
+              title="Dismiss"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
       <div className="row" style={{ alignItems: "center", marginBottom: 16 }}>
         <div className="col">
           <h2>ByteBurger Drive-Thru</h2>
