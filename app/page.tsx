@@ -378,7 +378,8 @@ export default function Page() {
     const key = "duration"
     const anyRef = stateRef as React.MutableRefObject<Record<string, any>>
     if (started) {
-      setSessionStart(Date.now())
+      const start = Date.now()
+      setSessionStart(start)
       setSessionSeconds(0)
       if (anyRef.current[key]) {
         try {
@@ -386,11 +387,7 @@ export default function Page() {
         } catch {}
       }
       anyRef.current[key] = setInterval(() => {
-        setSessionSeconds((prev) => {
-          const start = sessionStart ?? Date.now()
-          const secs = Math.max(0, Math.floor((Date.now() - start) / 1000))
-          return secs
-        })
+        setSessionSeconds(Math.max(0, Math.floor((Date.now() - start) / 1000)))
       }, 1000)
     } else {
       if (anyRef.current[key]) {
@@ -408,7 +405,7 @@ export default function Page() {
         anyRef.current[key] = null
       }
     }
-  }, [started, sessionStart])
+  }, [started])
 
   return (
     <>

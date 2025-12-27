@@ -1,12 +1,13 @@
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { getServiceClient } from "@/lib/supabaseServer"
 
-export async function POST(_req: Request, { params }: { params: { id: string } }): Promise<NextResponse> {
+export async function POST(_req: NextRequest, { params }: { params: Promise<{ id: string }> }): Promise<NextResponse> {
   try {
-    console.log("[api] POST /api/orders/:id/done", { id: params?.id })
-    const idNum = Number(params.id)
+    const { id } = await params
+    console.log("[api] POST /api/orders/:id/done", { id })
+    const idNum = Number(id)
     if (!Number.isFinite(idNum) || idNum <= 0) {
-      console.warn("[api] invalid id for done", { id: params?.id })
+      console.warn("[api] invalid id for done", { id })
       return NextResponse.json({ error: "invalid-id" }, { status: 400 })
     }
     const supabase = getServiceClient()
